@@ -1,0 +1,21 @@
+const express = require('express');
+const app = express();
+
+
+// Para poder leer JSON en el cuerpo de las peticiones
+app.use(express.json()); 
+
+// Ruta de prueba
+app.get('/', (req, res) => {
+  res.json({ message: 'API funcionando 🚀' });
+});
+
+//Ruta Usuario
+const usersRoutes = require('./routes/usuario');
+app.use('/usuario', usersRoutes);
+
+// Puerto
+const PORT = 3000;
+app.listen(PORT, () => {
+  console.log(`API escuchando en http://localhost:${PORT}`);
+});
