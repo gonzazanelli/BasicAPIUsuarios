@@ -1,6 +1,7 @@
+require('dotenv').config();
+
 const express = require('express');
 const app = express();
-
 
 // Para poder leer JSON en el cuerpo de las peticiones
 app.use(express.json()); 
@@ -15,7 +16,7 @@ const usersRoutes = require('./routes/usuario');
 app.use('/usuario', usersRoutes);
 
 // Puerto
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`API escuchando en http://localhost:${PORT}`);
 });
