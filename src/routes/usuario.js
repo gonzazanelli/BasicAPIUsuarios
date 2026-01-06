@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-//const sql = require('mssql');
+const sql = require('mssql');
 const { poolPromise } = require('../../config/db');
 
 
@@ -38,6 +38,52 @@ router.get('/lista', async (req, res) => {
     }));
 
     res.json(usuariosConInformacionAdicional);
+  } catch (err) {
+    console.error('Error al obtener los usuarios:', err);
+    res.status(500).send('Error interno del servidor');
+  } 
+});
+
+router.get('/info/:nombreUsuario', async (req, res) => {
+  try {
+    const pool = await poolPromise;
+
+    if (!pool) {
+      return res.status(500).json({ error: 'No hay conexión a la base de datos' });
+    }
+
+    const { nombreUsuario } = req.params;
+
+    const usuarioResult = await pool.request().input('nombreUsuario', sql.VarChar, nombreUsuario)
+      .query(`
+        SELECT nombre, apellido, nombreUsuario
+        FROM Usuario
+        WHERE nombreUsuario = @nombreUsuario
+      `);
+
+    if (usuarioResult.recordset.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const rolesResult = await pool
+      .request()
+      .input('nombreUsuario', sql.VarChar, nombreUsuario)
+      .query(`
+        SELECT r.identificador, r.nombre
+        FROM Usuario_Rol ur
+        INNER JOIN Rol r ON ur.identificadorRol = r.identificador
+        WHERE ur.nombreUsuario = @nombreUsuario
+      `);
+
+    const usuario = usuarioResult.recordset[0];
+
+    res.json({
+      nombre: usuario.nombre,
+      apellido: usuario.apellido,
+      nombreUsuario: usuario.nombreUsuario,
+      roles: rolesResult.recordset
+    });
+
   } catch (err) {
     console.error('Error al obtener los usuarios:', err);
     res.status(500).send('Error interno del servidor');
