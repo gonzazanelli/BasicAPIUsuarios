@@ -90,4 +90,32 @@ router.get('/info/:nombreUsuario', async (req, res) => {
   } 
 });
 
+router.get('/roles/:nombreUsuario', async (req, res) => {
+  try {
+    const pool = await poolPromise;
+
+    if (!pool) {
+      return res.status(500).json({ error: 'No hay conexión a la base de datos' });
+    }
+
+    const { nombreUsuario } = req.params;
+
+    const rolesResult = await pool
+      .request()
+      .input('nombreUsuario', sql.VarChar, nombreUsuario)
+      .query(`
+        SELECT r.identificador, r.nombre
+        FROM Usuario_Rol ur
+        INNER JOIN Rol r ON ur.identificadorRol = r.identificador
+        WHERE ur.nombreUsuario = @nombreUsuario
+      `);
+
+    res.json(rolesResult.recordset);
+    
+  } catch (err) {
+    console.error('Error al obtener los usuarios:', err);
+    res.status(500).send('Error interno del servidor');
+  } 
+});
+
 module.exports = router;
