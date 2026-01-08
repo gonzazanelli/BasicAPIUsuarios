@@ -118,4 +118,93 @@ router.get('/roles/:nombreUsuario', async (req, res) => {
   } 
 });
 
+router.post('/asociarRol', async (req, res) => {
+  try {
+    const pool = await poolPromise;
+
+    if (!pool) {
+      return res.status(500).json({ error: 'No hay conexión a la base de datos' });
+    }
+
+    const { nombreUsuario, identificadorRol } = req.body;
+
+    if (!nombreUsuario || nombreUsuario.trim() === '') {
+      return res.status(400).json({ error: 'El nombre de usuario es obligatorio' });
+    }
+
+    if (!Number.isInteger(identificadorRol) || identificadorRol <= 0){
+      return res.status(400).json({ error: 'El identificador del rol es obligatorio' });
+    }
+
+    // Validar Usuario
+    if (!(await valUsuario (pool, nombreUsuario))) {
+      return res.status(409).json({ error: 'El usuario no existe' });
+    }
+
+    // Validar Rol
+    if (!(await valRol (pool, identificadorRol))) {
+      return res.status(409).json({ error: 'El rol no existe' });
+    }
+        
+    // Control de duplicados
+    const existeAsociado = await pool
+      .request()
+      .input('nombreUsuario', sql.VarChar, nombreUsuario)
+      .input('identificadorRol', sql.Int, identificadorRol)
+      .query(`
+        SELECT COUNT(*) AS cantidad
+        FROM Usuario_Rol
+        WHERE nombreUsuario = @nombreUsuario and identificadorRol = @identificadorRol
+      `);
+
+    if (existeAsociado.recordset[0].cantidad > 0) {
+      return res.status(409).json({ error: 'El usuario ya tiene asociado el rol' });
+    }
+
+    // Se realiza el alta
+    const result = await pool
+    .request()
+    .input('nombreUsuario', sql.VarChar, nombreUsuario)
+    .input('identificadorRol', sql.Int, identificadorRol)
+    .query(`
+      INSERT INTO Usuario_Rol (nombreUsuario, identificadorRol)
+      VALUES (@nombreUsuario, @identificadorRol)
+    `);
+
+     res.status(201).json({ message: 'Rol asociado correctamente' });
+
+  } catch (err) {
+    console.error('Error al crear el rol:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+//Validar usuario
+async function valUsuario(pool, nombreUsuario) {
+  const existeUsuario = await pool
+    .request()
+    .input('nombreUsuario', sql.VarChar, nombreUsuario)
+    .query(`
+      SELECT COUNT(*) AS cantidad
+      FROM Usuario
+      WHERE nombreUsuario = @nombreUsuario
+    `);
+
+  return existeUsuario.recordset[0].cantidad != 0
+}
+
+//Validar rol
+async function valRol(pool, identificadorRol) {
+  const existeRol = await pool
+    .request()
+    .input('identificador', sql.Int, identificadorRol)
+    .query(`
+      SELECT COUNT(*) AS cantidad
+      FROM Rol
+      WHERE identificador = @identificador
+    `);
+
+  return existeRol.recordset[0].cantidad != 0
+}
+
 module.exports = router;
