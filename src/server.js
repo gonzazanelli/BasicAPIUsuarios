@@ -11,6 +11,10 @@ app.get('/', (req, res) => {
   res.json({ message: 'API funcionando 🚀' });
 });
 
+//Ruta Login
+const loginRoutes = require('./routes/login');
+app.use('/login', loginRoutes);
+
 //Ruta Usuario
 const usersRoutes = require('./routes/usuario');
 app.use('/usuario', usersRoutes);
