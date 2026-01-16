@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const sql = require('mssql');
 const { poolPromise } = require('../../config/db');
+const authMiddleware = require('../middlewares/authMiddleware');
 
 
 router.get('/lista', async (req, res) => {
@@ -44,7 +45,7 @@ router.get('/lista', async (req, res) => {
   } 
 });
 
-router.get('/info/:nombreUsuario', async (req, res) => {
+router.get('/info', authMiddleware, async (req, res) => {
   try {
     const pool = await poolPromise;
 
@@ -52,7 +53,7 @@ router.get('/info/:nombreUsuario', async (req, res) => {
       return res.status(500).json({ error: 'No hay conexión a la base de datos' });
     }
 
-    const { nombreUsuario } = req.params;
+    const nombreUsuario = req.user.nombreUsuario;
 
     const usuarioResult = await pool.request().input('nombreUsuario', sql.VarChar, nombreUsuario)
       .query(`
