@@ -11,6 +11,8 @@ app.get('/', (req, res) => {
   res.json({ message: 'API funcionando 🚀' });
 });
 
+// COMENTADISIMO PA
+
 //Ruta Login
 const loginRoutes = require('./routes/login');
 app.use('/login', loginRoutes);
